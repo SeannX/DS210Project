@@ -14,13 +14,17 @@ pub struct Edge {
 // and the Edge struct containing the information of
 pub struct Graph { pub content: HashMap<usize, Vec<Edge>> }
 
-// function that transform a list of Edge struct to Graph
-pub fn mk_graph(edge_lst: &Vec<Edge>) -> Graph {
-    let mut graph_hashmap: HashMap<usize, Vec<Edge>> = HashMap::new();
-    for edge in edge_lst.iter() {
-        let source_node: usize = edge.from;
-        // Add the Edge to the vector of source node if source node already exists, 
-        graph_hashmap.entry(source_node).or_insert(Vec::new()).push(edge.clone());
+impl Graph {
+    // Constructor that transform a list of Edge struct to Graph
+    pub fn new(edge_lst: &Vec<Edge>) -> Graph {
+        let mut graph_hashmap: HashMap<usize, Vec<Edge>> = HashMap::new();
+        for edge in edge_lst.iter() {
+            let source_node: usize = edge.from;
+            // Add the Edge to the vector of source node if source node already exists, 
+            graph_hashmap.entry(source_node).or_insert(Vec::new()).push(edge.clone());
+        }
+        return Graph{ content: graph_hashmap };
     }
-    return Graph{ content: graph_hashmap };
+
+
 }
