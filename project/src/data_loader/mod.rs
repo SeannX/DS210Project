@@ -29,10 +29,8 @@ pub fn read_csv(file_path: &str) -> Vec<Edge> {
         let weight: f64 = line_record[2].parse().unwrap();    // weight
         let timestamp: u64 = line_record[3].parse().unwrap(); // Timestamp
 
-        // Create an Edge struct and push it into the edges vector
         edges.push(Edge {from: from, to: to, weight: weight, timestamp: timestamp});
     }
-
-    // Return the parsed edges
+    
     return edges;
 }
