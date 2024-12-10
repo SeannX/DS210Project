@@ -1,14 +1,7 @@
 use csv::ReaderBuilder;
 use std::fs::File;
 
-// Edge struct used to represent a specific edge in the graph
-#[derive(Debug)]
-pub struct Edge {
-    pub from: usize,       // Source node that this edge is from
-    pub to: usize,         // Node that this edge points to
-    pub weight: f64,       // Weight of the edge.
-    pub timestamp: u64,    // Timestamp associated with this edge.
-}
+use crate::graph::Edge;
 
 // function that read the csv_file and construct the datas in to a vector of Edge structs.
 pub fn read_csv(file_path: &str) -> Vec<Edge> {
