@@ -2,12 +2,12 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 
 // Edge struct used to represent a specific edge in the graph
+// the forth field - TimeStamp is removed since not using.
 #[derive(Debug, Clone)]
 pub struct Edge {
     pub from: usize,       // Source node that this edge is from
     pub to: usize,         // Node that this edge points to
     pub weight: f64,       // Weight of the edge.
-    pub timestamp: u64,    // Timestamp associated with this edge.
 }
 
 #[derive(Debug, Clone)]
@@ -59,6 +59,8 @@ impl Graph {
 
         return NodeNeighbors{ input_nodes: input_nodes, output_nodes: output_nodes };
     }
+
+
 
     // This function calculates the clustering coefficient of a given node.
     // Clustering coefficient "is a measure of the degree to which nodes 
