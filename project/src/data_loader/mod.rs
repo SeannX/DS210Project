@@ -20,9 +20,8 @@ pub fn read_csv(file_path: &str) -> Vec<Edge> {
         let from: usize = line_record[0].parse().unwrap();    // The node that the edge comes from
         let to: usize = line_record[1].parse().unwrap();      // The node that the edge points to
         let weight: f64 = line_record[2].parse().unwrap();    // weight
-        let timestamp: u64 = line_record[3].parse().unwrap(); // Timestamp
 
-        edges.push(Edge {from: from, to: to, weight: weight, timestamp: timestamp});
+        edges.push(Edge {from: from, to: to, weight: weight});
     }
     
     return edges;
