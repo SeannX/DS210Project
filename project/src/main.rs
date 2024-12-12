@@ -13,9 +13,33 @@ fn main() {
     // Make a more convinient graph using the list of edges.
     let graph: Graph = Graph::new(&edge_lst);
 
-    let graph_info: GraphInfo = GraphInfo::get_info(&graph);
-    
-    println!("{:?}", graph_info.analyze_network_spread());
+    let graph_info: GraphInfo = GraphInfo::get_info(&graph.clone());
 
-    println!("{:?}", graph_info.analyze_trust_clustering());
+    let result1: String = graph_info.clone().get_largest_subgraph_analyze();
+
+    let result2: Vec<String> = graph_info.clone().get_individual_subgraph_analyze();
+
+    let result3: String = graph_info.clone().whole_graph_analyze();
+
+    let ts_lst = graph_info.clone().trust_scores;
+
+    let total_ts: f64 = ts_lst.values().sum::<f64>();
+
+    let mut avg: f64 = total_ts / ts_lst.len() as f64;
+
+    for s in graph_info.clone().sub_graphs.iter() {
+        println!("Graph: {:?}\n", s.content);
+    }
+
+    println!("Num nodes total: {:?}", graph.clone().content.len());
+
+    println!("{:?}\n", result1);
+
+    /*
+    for s in result2.iter() {
+        println!("{:?}\n", s);
+    }
+
+    println!("{:?}\n", result3);
+*/
 }
