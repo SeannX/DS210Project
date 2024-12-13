@@ -43,7 +43,7 @@ impl GraphInfo {
         }
     }
 
-    pub fn analyze_graph(&self, graph: &Graph, high_score: usize) -> String {
+    pub fn analyze_graph(&self, graph: &Graph, high_score: f64) -> String {
         // Filter nodes with trust score > 2.0
         let mut high_trust_nodes = vec![];
         for &node in graph.content.keys() {
@@ -93,26 +93,9 @@ impl GraphInfo {
             graph.content.len(), high_trust_count, high_trust_nodes.len(), clustering_percentage, centrality_percentage )
     }
 
-    /// Analyzes the largest subgraph
-    pub fn get_largest_subgraph_analyze(&self) -> String {
-        let largest_subgraph = self.sub_graphs.iter().max_by_key(|subgraph| subgraph.content.len());
-        if let Some(subgraph) = largest_subgraph {
-            self.analyze_graph(subgraph)
-        } else {
-            "No subgraphs available.".to_string()
-        }
-    }
-
-    /// Analyzes individual subgraphs
-    pub fn get_individual_subgraph_analyze(&self) -> Vec<String> {
-        self.sub_graphs.iter().enumerate().map(|(i, subgraph)| {
-            format!("Subgraph {} Analysis:\n{}", i + 1, self.analyze_graph(subgraph))
-        }).collect()
-    }
-
     /// Analyzes the entire graph
-    pub fn whole_graph_analyze(&self) -> String {
-        self.analyze_graph(&self.graph)
+    pub fn whole_graph_analyze(&self, high_score: f64) -> String {
+        self.analyze_graph(&self.graph, high_score)
     }
 
 }  
