@@ -3,12 +3,12 @@ use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
 pub struct GraphInfo {
-    graph: Graph,
-    nodes_indegree: HashMap<usize, usize>,
-    nodes_outdegree: HashMap<usize, usize>,
-    clustering_coefficients: HashMap<usize, f64>,
-    sub_graphs: Vec<Graph>,
-    trust_scores: HashMap<usize, f64>,
+    pub graph: Graph,
+    pub nodes_indegree: HashMap<usize, usize>,
+    pub nodes_outdegree: HashMap<usize, usize>,
+    pub clustering_coefficients: HashMap<usize, f64>,
+    pub sub_graphs: Vec<Graph>,
+    pub trust_scores: HashMap<usize, f64>,
 }
 
 impl GraphInfo {
@@ -27,7 +27,7 @@ impl GraphInfo {
         // Clustering coefficients
         let mut trust_scores = HashMap::new();
         for &node in graph.content.keys() {
-            clustering_coefficients.insert(node, graph.get_trust_score(node));
+            trust_scores.insert(node, graph.get_trust_score(node));
         }
 
         // Subgraphs
@@ -43,32 +43,76 @@ impl GraphInfo {
         }
     }
 
-    // Determines whether the network has major transaction nets or is separate
-    pub fn analyze_network_spread(&self) -> String {
-        let subgraph_count = self.sub_graphs.len();
-        let mut largest_subgraph = None;
-        let mut largest_size = 0;
-
-        for subgraph in &self.sub_graphs {
-            let subgraph_size = subgraph.content.len();
-            if subgraph_size > largest_size {
-                largest_size = subgraph_size;
-                largest_subgraph = Some(subgraph);
+    pub fn analyze_graph(&self, graph: &Graph, high_score: usize) -> String {
+        // Filter nodes with trust score > 2.0
+        let mut high_trust_nodes = vec![];
+        for &node in graph.content.keys() {
+            if let Some(&trust_score) = self.trust_scores.get(&node) {
+                if trust_score < high_score {
+                    high_trust_nodes.push(node);
+                }
             }
         }
+        // In case if there's no nodes with the high_score specified
+        if high_trust_nodes.is_empty() {
+            return "No high trust nodes in the graph.".to_string();
+        }
+    
+        let avg_clustering: f64 = self.clustering_coefficients.values().sum::<f64>()
+            / self.clustering_coefficients.len() as f64;
+    
+        let max_outdegree = self.nodes_outdegree.values().cloned().max().unwrap_or(0) as f64;
+        let mean_outdegree: f64 = self.nodes_outdegree.values().cloned().sum::<usize>() as f64
+            / self.nodes_outdegree.len() as f64;
+    
+        let mut high_clustering_count = 0;
+        let mut high_centrality_count = 0;
+    
+        for &node in &high_trust_nodes {
+            // Check cc to see if it is well-clusterred.
+            let clustering = self.clustering_coefficients.get(&node).unwrap_or(&0.0);
+            if *clustering > avg_clustering {
+                high_clustering_count += 1;
+            }
+    
+            // Calculate centrality
+            if let Some(&degree) = self.nodes_outdegree.get(&node) {
+                if degree as f64 >= 0.75 * max_outdegree || degree as f64 >= mean_outdegree {
+                    high_centrality_count += 1;
+                }
+            }
+        }
+    
+        let high_trust_count = high_trust_nodes.len();
+        let clustering_percentage = (high_clustering_count as f64 / high_trust_count as f64) * 100.0;
+        let centrality_percentage = (high_centrality_count as f64 / high_trust_count as f64) * 100.0;
+    
+        // Return the result
+        format!(
+            "Graph: {} nodes.\nHigh trust nodes: {} ({} nodes).\nPercentage with high clustering: {:.2}%.\nPercentage with high centrality: {:.2}%.",
+            graph.content.len(), high_trust_count, high_trust_nodes.len(), clustering_percentage, centrality_percentage )
+    }
 
-        let spread_message = if subgraph_count == 1 {
-            "The network forms a single major transaction net.".to_string()
+    /// Analyzes the largest subgraph
+    pub fn get_largest_subgraph_analyze(&self) -> String {
+        let largest_subgraph = self.sub_graphs.iter().max_by_key(|subgraph| subgraph.content.len());
+        if let Some(subgraph) = largest_subgraph {
+            self.analyze_graph(subgraph)
         } else {
-            format!("The network is separated into {} distinct transaction nets.", subgraph_count)
-        };
-
-        if let Some(largest) = largest_subgraph {
-            let nodes: Vec<_> = largest.content.keys().cloned().collect();
-            format!("{} The largest subgraph has {} nodes.", spread_message, largest_size)
-        } else {
-            spread_message
+            "No subgraphs available.".to_string()
         }
     }
 
-}
+    /// Analyzes individual subgraphs
+    pub fn get_individual_subgraph_analyze(&self) -> Vec<String> {
+        self.sub_graphs.iter().enumerate().map(|(i, subgraph)| {
+            format!("Subgraph {} Analysis:\n{}", i + 1, self.analyze_graph(subgraph))
+        }).collect()
+    }
+
+    /// Analyzes the entire graph
+    pub fn whole_graph_analyze(&self) -> String {
+        self.analyze_graph(&self.graph)
+    }
+
+}  

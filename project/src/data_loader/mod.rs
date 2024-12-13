@@ -23,6 +23,5 @@ pub fn read_csv(file_path: &str) -> Vec<Edge> {
 
         edges.push(Edge {from: from, to: to, weight: weight});
     }
-    
     return edges;
 }
