@@ -27,12 +27,16 @@ impl Graph {
     // Constructor that transform a list of Edge struct to Graph
     pub fn new(edge_lst: &Vec<Edge>) -> Graph {
         let mut graph_hashmap: HashMap<usize, Vec<Edge>> = HashMap::new();
+
         for edge in edge_lst.iter() {
-            let source_node: usize = edge.from;
-            // Add the Edge to the vector of source node if source node already exists, 
-            graph_hashmap.entry(source_node).or_insert(Vec::new()).push(edge.clone());
+            // Add edge to the source node's adjacency list
+            graph_hashmap.entry(edge.from).or_insert(Vec::new()).push(edge.clone());
+            
+            // Ensure the target node is also included in the graph, even if it has no outgoing edges
+            graph_hashmap.entry(edge.to).or_insert(Vec::new());
         }
-        return Graph{ content: graph_hashmap };
+
+        Graph { content: graph_hashmap }
     }
 
     // method that get the list of neighbors of a node.
@@ -124,6 +128,7 @@ impl Graph {
         return edges_btw_nb as f64 / possible_connections as f64
     }
 
+    // Finds all connected subgraphs in the graph
     pub fn find_subgraphs(&self) -> Vec<Graph> {
         let mut visited = HashSet::new();
         let mut subgraphs = Vec::new();
@@ -131,46 +136,59 @@ impl Graph {
         for &node in self.content.keys() {
             if !visited.contains(&node) {
                 // Use BFS to find all nodes in the connected subgraph
-                let subgraph_nodes = self.bfs(node);
+                let subgraph_nodes = self.bfs(node, &mut visited);
 
                 // Construct the subgraph from the collected nodes
                 let mut subgraph_content = HashMap::new();
-                for node in subgraph_nodes {
-                    if let Some(edges) = self.content.get(&node) {
-                        subgraph_content.insert(node, edges.clone());
+                for subgraph_node in subgraph_nodes.iter() {
+                    if let Some(edges) = self.content.get(subgraph_node) {
+                        subgraph_content.insert(*subgraph_node, edges.clone());
                     }
-                    visited.insert(node);
                 }
 
                 subgraphs.push(Graph { content: subgraph_content });
             }
         }
 
-        return subgraphs;
+        subgraphs
     }
 
-    // BFS algorithm that find all the connected node
-    // a helper function of find_subgraphs
-    pub fn bfs(&self, start_node: usize) -> HashSet<usize> {
+    // BFS algorithm that finds all connected node in a subgraph
+    fn bfs(&self, start_node: usize, visited: &mut HashSet<usize>) -> HashSet<usize> {
         let mut sub_graph_nodes = HashSet::new();
         let mut queue = VecDeque::new();
-        let mut visited: HashSet<usize> = HashSet::new();
 
-        queue.push_back(start_node); 
-        sub_graph_nodes.insert(start_node);
+        queue.push_back(start_node);
+        visited.insert(start_node);
 
         while let Some(node) = queue.pop_front() {
             sub_graph_nodes.insert(node);
 
             if let Some(edges) = self.content.get(&node) {
                 for edge in edges {
+                    // Check both directions for undirected graph behavior
                     if !visited.contains(&edge.to) {
                         visited.insert(edge.to);
                         queue.push_back(edge.to);
                     }
+                    if !visited.contains(&edge.from) {
+                        visited.insert(edge.from);
+                        queue.push_back(edge.from);
+                    }
+                }
+            }
+
+            // Additionally, check if the node is pointed to by other edges
+            for (&other_node, edges) in &self.content {
+                for edge in edges {
+                    if edge.to == node && !visited.contains(&other_node) {
+                        visited.insert(other_node);
+                        queue.push_back(other_node);
+                    }
                 }
             }
         }
+
         return sub_graph_nodes;
     }
 
