@@ -7,6 +7,8 @@ use analyze::GraphInfo;
 
 fn main() {
     let csv_path = "soc-sign-bitcoinalpha.csv";
+    
+    println!("\n------------- Genral Info -------------");
     // The list of edges corresponds to the data
     let edge_lst: Vec<graph::Edge> = read_csv(csv_path);
 
@@ -15,18 +17,22 @@ fn main() {
 
     let graph_info: GraphInfo = GraphInfo::get_info(&graph.clone());
 
-    let result: String = graph_info.clone().whole_graph_analyze(2.0);
+    let num_nodes: usize = graph_info.graph.content.len();
+    println!("Number of nodes in this data: {}\n", num_nodes);
 
+    let num_sub_graphs: usize = graph_info.sub_graphs.len();
+    println!("Number of subgraphs in this data: {}", num_sub_graphs);
 
-    println!("{:?}", result);
+    let mut graph_index = 1;
 
-    println!("Num nodes total: {:?}", graph.clone().content.len());
-
-    /*
-    for s in result2.iter() {
-        println!("{:?}\n", s);
+    for sub_graph in graph_info.sub_graphs.iter() {
+        println!("Number of nodes in sub graph {}: {}", graph_index, sub_graph.content.len());
+        graph_index += 1;
     }
 
-    println!("{:?}\n", result3);
-*/
+    let result: String = graph_info.clone().analyze_clustering_centrality(2.0, -2.0);
+
+    println!("\n------------- Clustering and Centrality of nodes with high / low trust score -------------");
+
+    println!("{}", result);
 }
