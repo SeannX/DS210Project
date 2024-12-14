@@ -43,19 +43,19 @@ impl GraphInfo {
         }
     }
 
-    pub fn analyze_graph(&self, graph: &Graph, high_score: f64) -> String {
-        // Filter nodes with trust score > 2.0
+    pub fn analyze_clustering_centrality(&self, high_score: f64, low_score: f64) -> String {
+        // Filter nodes with trust score
         let mut high_trust_nodes = vec![];
-        for &node in graph.content.keys() {
+        let mut low_trust_nodes = vec![];
+        for &node in self.graph.content.keys() {
             if let Some(&trust_score) = self.trust_scores.get(&node) {
-                if trust_score < high_score {
+                if trust_score >= high_score {
                     high_trust_nodes.push(node);
                 }
+                if trust_score <= low_score {
+                    low_trust_nodes.push(node)
+                }
             }
-        }
-        // In case if there's no nodes with the high_score specified
-        if high_trust_nodes.is_empty() {
-            return "No high trust nodes in the graph.".to_string();
         }
     
         let avg_clustering: f64 = self.clustering_coefficients.values().sum::<f64>()
@@ -65,37 +65,65 @@ impl GraphInfo {
         let mean_outdegree: f64 = self.nodes_outdegree.values().cloned().sum::<usize>() as f64
             / self.nodes_outdegree.len() as f64;
     
-        let mut high_clustering_count = 0;
-        let mut high_centrality_count = 0;
+        let mut high_clustering_count_high_score = 0;
+        let mut high_centrality_count_high_score = 0;
+        let mut high_clustering_count_low_score = 0;
+        let mut high_centrality_count_low_score = 0;
     
         for &node in &high_trust_nodes {
             // Check cc to see if it is well-clusterred.
             let clustering = self.clustering_coefficients.get(&node).unwrap_or(&0.0);
             if *clustering > avg_clustering {
-                high_clustering_count += 1;
+                high_clustering_count_high_score += 1;
             }
     
             // Calculate centrality
             if let Some(&degree) = self.nodes_outdegree.get(&node) {
-                if degree as f64 >= 0.75 * max_outdegree || degree as f64 >= mean_outdegree {
-                    high_centrality_count += 1;
+                if degree as f64 >= mean_outdegree {
+                    high_centrality_count_high_score += 1;
+                }
+            }
+        }
+
+        for &node in &low_trust_nodes {
+            // Check cc to see if it is well-clusterred.
+            let clustering = self.clustering_coefficients.get(&node).unwrap_or(&0.0);
+            if *clustering > avg_clustering {
+                high_clustering_count_low_score += 1;
+            }
+    
+            // Calculate centrality
+            if let Some(&degree) = self.nodes_outdegree.get(&node) {
+                if degree as f64 >= mean_outdegree {
+                    high_centrality_count_low_score += 1;
                 }
             }
         }
     
         let high_trust_count = high_trust_nodes.len();
-        let clustering_percentage = (high_clustering_count as f64 / high_trust_count as f64) * 100.0;
-        let centrality_percentage = (high_centrality_count as f64 / high_trust_count as f64) * 100.0;
+        let clustering_percentage_high_score = (high_clustering_count_high_score as f64 / high_trust_count as f64) * 100.0;
+        let centrality_percentage_high_score = (high_centrality_count_high_score as f64 / high_trust_count as f64) * 100.0;
+
+        let low_trust_count = low_trust_nodes.len();
+        let clustering_percentage_low_score = (high_clustering_count_low_score as f64 / low_trust_count as f64) * 100.0;
+        let centrality_percentage_low_score = (high_centrality_count_low_score as f64 / low_trust_count as f64) * 100.0;
+
+
     
         // Return the result
-        format!(
-            "Graph: {} nodes.\nHigh trust nodes: {} ({} nodes).\nPercentage with high clustering: {:.2}%.\nPercentage with high centrality: {:.2}%.",
-            graph.content.len(), high_trust_count, high_trust_nodes.len(), clustering_percentage, centrality_percentage )
-    }
-
-    /// Analyzes the entire graph
-    pub fn whole_graph_analyze(&self, high_score: f64) -> String {
-        self.analyze_graph(&self.graph, high_score)
+        return format!("\nNodes with trust score >= {}: {} nodes.
+                \nPercentage with high clustering: {:.2}%.
+                \nPercentage with high centrality: {:.2}%.
+                \nNodes with trust score <= {}: {} nodes.
+                \nPercentage with high clustering: {:.2}%.
+                \nPercentage with high centrality: {:.2}%.",
+                high_score, high_trust_count,
+                clustering_percentage_high_score, 
+                centrality_percentage_high_score,
+                low_score, low_trust_count,
+                clustering_percentage_low_score, 
+                centrality_percentage_low_score,
+                );
     }
 
 }  
