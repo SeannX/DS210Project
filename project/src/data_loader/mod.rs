@@ -23,5 +23,8 @@ pub fn read_csv(file_path: &str) -> Vec<Edge> {
 
         edges.push(Edge {from: from, to: to, weight: weight});
     }
+
+    let num_edges: usize = edges.len();
+    println!("\nTotal number of edges: {}\n", num_edges);
     return edges;
 }
