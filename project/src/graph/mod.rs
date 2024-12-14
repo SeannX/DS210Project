@@ -266,7 +266,7 @@ fn test_clustering_coefficient_connected() {
     println!("{:?}", graph);
     println!("{}", cc);
 
-    assert!(cc > 0.0); // Node 2's neighbors (1 and 3) are connected
+    assert!(cc > 0.0); // Node 2's neighbors (1 and 3) are connected so cc should be > 0 
 }
 
 #[test]
