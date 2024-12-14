@@ -8,7 +8,7 @@ use analyze::GraphInfo;
 fn main() {
     let csv_path = "soc-sign-bitcoinalpha.csv";
     
-    println!("\n------------- Genral Info -------------");
+    println!("\n------------- General Info -------------");
     // The list of edges corresponds to the data
     let edge_lst: Vec<graph::Edge> = read_csv(csv_path);
 
@@ -17,11 +17,23 @@ fn main() {
 
     let graph_info: GraphInfo = GraphInfo::get_info(&graph.clone());
 
+    // number of total nodes
     let num_nodes: usize = graph_info.graph.content.len();
     println!("Number of nodes in this data: {}\n", num_nodes);
 
+    // Number of sub graphs
     let num_sub_graphs: usize = graph_info.sub_graphs.len();
-    println!("Number of subgraphs in this data: {}", num_sub_graphs);
+    println!("Number of subgraphs in this data: {}\n", num_sub_graphs);
+
+    // Average clustering coefficient
+    let clustering_coefficient_sum: f64 = graph_info.clustering_coefficients.values().sum();
+    let avg_clustering_coefficient: f64 = clustering_coefficient_sum / num_nodes as f64;
+    println!("Average clustering coefficient: {:.5}\n", avg_clustering_coefficient);
+
+    // Average trust score
+    let trust_score_sum: f64 = graph_info.trust_scores.values().sum();
+    let avg_trust_score: f64 = trust_score_sum / num_nodes as f64;
+    println!("Average trust score: {:.5}\n", avg_trust_score);
 
     let mut graph_index = 1;
 
@@ -30,16 +42,14 @@ fn main() {
         graph_index += 1;
     }
 
-    let clustering_centrality_result: String = graph_info.clone().analyze_clustering_centrality(2.0, -2.0);
-
-    let k_representatives_result: String = graph_info.clone().find_k_representatives(15);
-
     println!("\n------------- Clustering and Centrality of nodes with high / low trust score -------------");
 
+    let clustering_centrality_result: String = graph_info.clone().analyze_clustering_centrality(2.0, -2.0);
     println!("{}", clustering_centrality_result);
 
     println!("\n------------- K representatives -------------");
 
+    let k_representatives_result: String = graph_info.clone().find_k_representatives(15);
     println!("{}", k_representatives_result);
 }
 
