@@ -17,7 +17,7 @@ pub fn bfs(graph: &Graph, start_node: usize, visited: &mut HashSet<usize>) -> Ha
 
         if let Some(edges) = graph.content.get(&node) {
             for edge in edges {
-                // Check both directions for undirected graph behavior
+
                 if !visited.contains(&edge.to) {
                     visited.insert(edge.to);
                     queue.push_back(edge.to);
@@ -42,6 +42,9 @@ pub fn bfs(graph: &Graph, start_node: usize, visited: &mut HashSet<usize>) -> Ha
     return sub_graph_nodes;
 }
 
+
+// ----------------------- TESTS ----------------------- 
+
 #[test]
 fn test_bfs_single_connected_component() {
     let edges = vec![
@@ -53,9 +56,11 @@ fn test_bfs_single_connected_component() {
     let mut visited = HashSet::new();
 
     let sub_graph = bfs(&graph, 1, &mut visited);
-    let expected: HashSet<usize> = vec![1, 2, 3, 4].into_iter().collect();
+    let mut expected: HashSet<usize> = HashSet::new();
+    expected.insert(1); expected.insert(2); 
+    expected.insert(3); expected.insert(4);
 
-    assert_eq!(sub_graph, expected);
+    assert_eq!(sub_graph, expected); // see if result is generated as expected
 }
 
 #[test]
@@ -69,9 +74,10 @@ fn test_bfs_disconnected_graph() {
     let mut visited = HashSet::new();
 
     let sub_graph = bfs(&graph, 1, &mut visited);
-    let expected: HashSet<usize> = vec![1, 2, 3].into_iter().collect();
+    let mut expected: HashSet<usize> = HashSet::new();
+    expected.insert(1); expected.insert(2); expected.insert(3);
 
-    assert_eq!(sub_graph, expected);
-    assert!(!sub_graph.contains(&4));
-    assert!(!sub_graph.contains(&5));
+    assert_eq!(sub_graph, expected); // see if result is generated as expected
+    assert!(!sub_graph.contains(&4)); // Sub_graph should not contain 4
+    assert!(!sub_graph.contains(&5)); // Sub_graph should not contain 5
 }

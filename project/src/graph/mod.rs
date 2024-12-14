@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 use std::collections::HashSet;
-use std::collections::VecDeque;
+
+pub mod algorithm;
+use algorithm::bfs;
+// use algorithm::dijkstra;
 
 // Edge struct used to represent a specific edge in the graph
 // the forth field - TimeStamp is removed since not using.
@@ -64,16 +67,20 @@ impl Graph {
 
     // compute the indegree and outdegree of ALL nodes in the graph.
     // return value: (indegree HashMap, outdegre HashMap)
-    pub fn get_degrees(&self) -> (HashMap<usize, usize>, HashMap<usize, usize>) {
+    pub fn get_degrees(&self) -> (HashMap<usize, f64>, HashMap<usize, f64>) {
         let mut in_degree = HashMap::new();
         let mut out_degree = HashMap::new();
 
         for (node, edges) in &self.content {
-            out_degree.insert(*node, edges.len());
+            out_degree.insert(*node, edges.len() as f64);
 
             for edge in edges {
-                *in_degree.entry(edge.to).or_insert(0) += 1;
+                *in_degree.entry(edge.to).or_insert(0.0) += 1.0;
             }
+        }
+        // add nodes with 0 outdegree
+        for node in self.content.keys() {
+            in_degree.entry(*node).or_insert(0.0);
         }
 
         return (in_degree, out_degree);
@@ -87,38 +94,27 @@ impl Graph {
         let neighbors = self.get_neighbors(node);
 
         let mut edges_btw_nb = 0;
-        let mut outdegree_nb_set: HashSet<usize> = HashSet::new();
-        let mut indegree_nb_set: HashSet<usize> = HashSet::new();
+        let mut nb_set: HashSet<usize> = HashSet::new();
 
         for nb in neighbors.output_nodes.iter() {
-            outdegree_nb_set.insert(nb.clone());
+            nb_set.insert(nb.clone());
         }
         for nb in neighbors.input_nodes.iter() {
-            indegree_nb_set.insert(nb.clone());
+            nb_set.insert(nb.clone());
         }
 
         // total edges between neighbors of n
-        for neighbor in neighbors.output_nodes {
+        for &neighbor in &nb_set {
             if let Some(edges) = self.content.get(&neighbor) {
                 for edge in edges {
-                    if outdegree_nb_set.contains(&edge.to) {
-                        edges_btw_nb += 1;
+                    if nb_set.contains(&edge.to) {
+                        edges_btw_nb += 1; // Count only directed edges between neighbors
                     }
                 }
             }
         }
 
-        for neighbor in neighbors.input_nodes {
-            if let Some(edges) = self.content.get(&neighbor) {
-                for edge in edges {
-                    if indegree_nb_set.contains(&edge.to) {
-                        edges_btw_nb += 1;
-                    }
-                }
-            }
-        }
-
-        let num_nb = indegree_nb_set.len() + outdegree_nb_set.len();
+        let num_nb = nb_set.len();
         if num_nb < 2 {
             return 0.0;
         }
@@ -136,7 +132,7 @@ impl Graph {
         for &node in self.content.keys() {
             if !visited.contains(&node) {
                 // Use BFS to find all nodes in the connected subgraph
-                let subgraph_nodes = self.bfs(node, &mut visited);
+                let subgraph_nodes = bfs(&self, node, &mut visited);
 
                 // Construct the subgraph from the collected nodes
                 let mut subgraph_content = HashMap::new();
@@ -150,46 +146,7 @@ impl Graph {
             }
         }
 
-        subgraphs
-    }
-
-    // BFS algorithm that finds all connected node in a subgraph
-    fn bfs(&self, start_node: usize, visited: &mut HashSet<usize>) -> HashSet<usize> {
-        let mut sub_graph_nodes = HashSet::new();
-        let mut queue = VecDeque::new();
-
-        queue.push_back(start_node);
-        visited.insert(start_node);
-
-        while let Some(node) = queue.pop_front() {
-            sub_graph_nodes.insert(node);
-
-            if let Some(edges) = self.content.get(&node) {
-                for edge in edges {
-                    // Check both directions for undirected graph behavior
-                    if !visited.contains(&edge.to) {
-                        visited.insert(edge.to);
-                        queue.push_back(edge.to);
-                    }
-                    if !visited.contains(&edge.from) {
-                        visited.insert(edge.from);
-                        queue.push_back(edge.from);
-                    }
-                }
-            }
-
-            // Additionally, check if the node is pointed to by other edges
-            for (&other_node, edges) in &self.content {
-                for edge in edges {
-                    if edge.to == node && !visited.contains(&other_node) {
-                        visited.insert(other_node);
-                        queue.push_back(other_node);
-                    }
-                }
-            }
-        }
-
-        return sub_graph_nodes;
+        return subgraphs;
     }
 
     // Calculate the trust score of a given node
@@ -216,4 +173,157 @@ impl Graph {
         return total_trust_score as f64 / node_count as f64
     }
 
+}
+
+// ----------------------- TESTS ----------------------- 
+
+#[test]
+fn test_graph_new_with_edges() {
+    let edges = vec![
+        Edge { from: 1, to: 2, weight: 1.0 },
+        Edge { from: 2, to: 3, weight: 2.0 },
+    ];
+    let graph = Graph::new(&edges);
+
+    assert_eq!(graph.content.len(), 3); // Nodes 1, 2, 3
+    assert!(graph.content.contains_key(&1));
+    assert!(graph.content.contains_key(&2));
+    assert!(graph.content.contains_key(&3));
+}
+
+#[test]
+fn test_graph_include_target_nodes() {
+    let edges = vec![
+        Edge { from: 1, to: 2, weight: 1.0 },
+    ];
+    let graph = Graph::new(&edges);
+
+    assert!(graph.content.contains_key(&2)); // Ensure target node 2 is included
+    assert_eq!(graph.content[&2].len(), 0); // Node 2 has no outgoing edges
+}
+
+#[test]
+fn test_get_neighbors() {
+    let edges = vec![
+        Edge { from: 1, to: 2, weight: 1.0 },
+        Edge { from: 3, to: 2, weight: 1.0 },
+    ];
+    let graph = Graph::new(&edges);
+
+    let neighbors = graph.get_neighbors(2);
+    assert_eq!(neighbors.input_nodes.contains(&1) || neighbors.input_nodes.contains(&3), true);
+    assert_eq!(neighbors.output_nodes, vec![]);
+}
+
+#[test]
+fn test_get_neighbors_no_edges() {
+    let edges = vec![
+        Edge { from: 1, to: 2, weight: 1.0 },
+    ];
+    let graph = Graph::new(&edges);
+
+    let neighbors = graph.get_neighbors(3);
+    assert!(neighbors.input_nodes.is_empty());
+    assert!(neighbors.output_nodes.is_empty());
+}
+
+#[test]
+fn test_get_degrees() {
+    let edges = vec![
+        Edge { from: 1, to: 2, weight: 1.0 },
+        Edge { from: 2, to: 3, weight: 1.0 },
+    ];
+    let graph = Graph::new(&edges);
+
+    let (in_degree, out_degree) = graph.get_degrees();
+    assert_eq!(in_degree[&2], 1.0); // Node 2 has 1 incoming edge
+    assert_eq!(out_degree[&2], 1.0); // Node 2 has 1 outgoing edge
+}
+
+#[test]
+fn test_get_degrees_no_outgoing_or_incoming() {
+    let edges = vec![
+        Edge { from: 1, to: 2, weight: 1.0 },
+    ];
+    let graph = Graph::new(&edges);
+
+    let (in_degree, out_degree) = graph.get_degrees();
+    println!("{:?}, {:?}", in_degree, out_degree);
+    assert_eq!(in_degree[&1], 0.0); // Node 1 has no incoming edges
+    assert_eq!(out_degree[&2], 0.0); // Node 2 has no outgoing edges
+}
+
+#[test]
+fn test_clustering_coefficient_connected() {
+    let edges = vec![
+        Edge { from: 1, to: 2, weight: 1.0 },
+        Edge { from: 2, to: 3, weight: 1.0 },
+        Edge { from: 3, to: 1, weight: 1.0 },
+    ];
+    let graph = Graph::new(&edges);
+
+    let cc = graph.clustering_coefficient(2);
+    println!("{:?}", graph);
+    println!("{}", cc);
+
+    assert!(cc > 0.0); // Node 2's neighbors (1 and 3) are connected
+}
+
+#[test]
+fn test_clustering_coefficient_no_neighbors() {
+    let edges = vec![
+        Edge { from: 1, to: 2, weight: 1.0 },
+    ];
+    let graph = Graph::new(&edges);
+
+    let cc = graph.clustering_coefficient(3);
+    assert_eq!(cc, 0.0); // Node 3 has no neighbors
+}
+
+// Entire graph is connected
+#[test]
+fn test_find_one_subgraphs() {
+    let edges = vec![
+        Edge { from: 1, to: 2, weight: 1.0 },
+        Edge { from: 2, to: 3, weight: 1.0 },
+    ];
+    let graph = Graph::new(&edges);
+
+    let subgraphs = graph.find_subgraphs();
+    assert_eq!(subgraphs.len(), 1);
+}
+
+#[test]
+fn test_find_subgraphs() {
+    let edges = vec![
+        Edge { from: 1, to: 2, weight: 1.0 },
+        Edge { from: 3, to: 4, weight: 1.0 },
+    ];
+    let graph = Graph::new(&edges);
+
+    let subgraphs = graph.find_subgraphs();
+    assert_eq!(subgraphs.len(), 2); // Two disconnected subgraphs
+}
+
+#[test]
+fn test_get_trust_score() {
+    let edges = vec![
+        Edge { from: 1, to: 2, weight: 1.5 },
+        Edge { from: 3, to: 2, weight: 2.5 },
+    ];
+    let graph = Graph::new(&edges);
+
+    let trust_score = graph.get_trust_score(2);
+    assert_eq!(trust_score, 2.0); // Average weight: (1.5 + 2.5) / 2
+}
+
+#[test]
+fn test_get_trust_score_zero_indegree() {
+    let edges = vec![
+        Edge { from: 1, to: 2, weight: 1.5 },
+    ];
+    let graph = Graph::new(&edges);
+
+    let trust_score = graph.get_trust_score(3);
+    assert_eq!(trust_score, 0.0); // No incoming edges for node 3
 }

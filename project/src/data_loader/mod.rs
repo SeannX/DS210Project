@@ -1,5 +1,6 @@
 use csv::ReaderBuilder;
 use std::fs::File;
+use std::collections::HashSet;
 
 use crate::graph::Edge;
 
@@ -27,4 +28,32 @@ pub fn read_csv(file_path: &str) -> Vec<Edge> {
     let num_edges: usize = edges.len();
     println!("\nTotal number of edges: {}\n", num_edges);
     return edges;
+}
+
+// ----------------------- TESTS ----------------------- 
+
+#[test]
+fn test_read_csv_num_edges() {
+    let file = "soc-sign-bitcoinalpha.csv";
+    let edges = read_csv(file);
+
+    // Num edges should = 24186 according to data base's documentation
+    assert_eq!(edges.len(), 24186, "The number of edges should be 24186");
+}
+
+#[test]
+fn test_read_csv_num_nodes() {
+    let file = "soc-sign-bitcoinalpha.csv";
+    let edges = read_csv(file);
+
+    let mut nodes = HashSet::new();
+    for edge in &edges {
+        nodes.insert(edge.from);
+        nodes.insert(edge.to);
+    }
+
+    // Num nodes should = 3783 according to data base's documentation.
+    assert_eq!(nodes.len(), 3783, "The number of nodes should be 3783");
+
+    println!("Test passed: Correct number of edges and nodes detected.");
 }
