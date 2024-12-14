@@ -142,19 +142,16 @@ impl GraphInfo {
         let (min_indegree, max_indegree) = Self::find_min_max(&self.nodes_indegree);
         let (min_clustering, max_clustering) = Self::find_min_max(&self.clustering_coefficients);
     
-        let mut node_scores: Vec<(usize, f64)> = self.graph.content.keys().map(|&node| {
+        let mut node_scores: Vec<(usize, f64, f64)> = self.graph.content.keys().map(|&node| {
             let normalized_centrality = Self::normalize(*self.nodes_indegree.get(&node).unwrap_or(&0.0) as f64 as f64, min_indegree, max_indegree);
             let normalized_clustering =  Self::normalize(*self.clustering_coefficients.get(&node).unwrap_or(&0.0) as f64, min_clustering, max_clustering);
             let score = 0.7 * normalized_centrality + 0.3 * normalized_clustering;
-            (node, score)
+            let trust_score = *self.trust_scores.get(&node).unwrap_or(&0.0);
+            (node, score, trust_score)
         }).collect();
     
         // Sort base on score then by trust score if equal to remain order.
-        node_scores.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap().then_with(|| {
-            let trust_a = self.trust_scores.get(&a.0).unwrap_or(&0.0);
-            let trust_b = self.trust_scores.get(&b.0).unwrap_or(&0.0);
-            trust_b.partial_cmp(trust_a).unwrap() // Secondary sort by trust score
-        }));
+        node_scores.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap().then(b.2.partial_cmp(&a.2).unwrap()));
         
     
         // get the k representative 
@@ -315,4 +312,55 @@ fn test_find_k_representatives_insufficient_nodes() {
 
     let result = info.find_k_representatives(5);
     assert!(result.contains("Selected Representatives: [1, 2]") || result.contains("Selected Representatives: [2, 1]"));
+}
+
+#[test]
+fn test_find_min_max_typical() {
+    use std::collections::HashMap;
+
+    let mut values = HashMap::new();
+    values.insert(1, 10.0);
+    values.insert(2, 20.0);
+    values.insert(3, 5.0);
+    values.insert(4, 15.0);
+
+    let (min, max) = GraphInfo::find_min_max(&values);
+
+    assert_eq!(min, 5.0);
+    assert_eq!(max, 20.0);
+}
+
+
+#[test]
+fn test_find_min_max_empty() {
+    use std::collections::HashMap;
+
+    let values: HashMap<usize, f64> = HashMap::new();
+
+    let (min, max) = GraphInfo::find_min_max(&values);
+
+    assert_eq!(min, 0.0); // Should return 0.0
+    assert_eq!(max, 0.0); // Same
+}
+
+#[test]
+fn test_normalize_typical() {
+    let value = 15.0;
+    let min = 10.0;
+    let max = 20.0;
+
+    let normalized = GraphInfo::normalize(value, min, max);
+
+    assert_eq!(normalized, 0.5); // (15 - 10) / (20 - 10) = 0.5
+}
+
+#[test]
+fn test_normalize_min_equals_max() {
+    let value = 10.0;
+    let min = 10.0;
+    let max = 10.0;
+
+    let normalized = GraphInfo::normalize(value, min, max);
+
+    assert_eq!(normalized, 0.0); // Should handle division by zero.
 }

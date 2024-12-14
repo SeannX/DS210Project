@@ -42,8 +42,8 @@ impl Graph {
         Graph { content: graph_hashmap }
     }
 
-    // method that get the list of neighbors of a node.
-    pub fn get_neighbors(&self, node: usize) -> NodeNeighbors {
+    // helper method that get the list of neighbors of a node.
+    fn get_neighbors(&self, node: usize) -> NodeNeighbors {
         let mut input_nodes: Vec<usize> = Vec::new();
         let mut output_nodes: Vec<usize> = Vec::new();
 
@@ -71,18 +71,13 @@ impl Graph {
         let mut in_degree = HashMap::new();
         let mut out_degree = HashMap::new();
 
-        for (node, edges) in &self.content {
-            out_degree.insert(*node, edges.len() as f64);
-
-            for edge in edges {
-                *in_degree.entry(edge.to).or_insert(0.0) += 1.0;
-            }
-        }
-        // add nodes with 0 outdegree
         for node in self.content.keys() {
-            in_degree.entry(*node).or_insert(0.0);
-        }
+            let neighbors = self.get_neighbors(*node);
 
+            out_degree.insert(*node, neighbors.output_nodes.len() as f64);
+
+            in_degree.insert(*node, neighbors.input_nodes.len() as f64);
+        }
         return (in_degree, out_degree);
     }
 
