@@ -182,11 +182,13 @@ impl GraphInfo {
         let satisfaction_message = format!(
             "\nSelected Representatives: {:?}
             \nThe number of representatives is {:.2}% of total nodes.
-            \nAverage trust score of representatives: {:?}
+            \nAverage trust scores of each representative: {:?}
+            \nAverage trust scores of all representatives: {}
             \nAverage clustering coefficient of representatives: {}",
             representatives,
             representative_ratio,
             avg_trust_score,
+            avg_trust_score.clone().into_iter().sum::<f64>() / avg_trust_score.len() as f64,
             avg_representative_clustering,
         );
     

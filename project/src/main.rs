@@ -44,12 +44,12 @@ fn main() {
 
     println!("\n------------- Clustering and Centrality of nodes with high / low trust score -------------");
 
-    let clustering_centrality_result: String = graph_info.clone().analyze_clustering_centrality(2.0, -2.0);
+    let clustering_centrality_result: String = graph_info.clone().analyze_clustering_centrality(4.0, -2.0);
     println!("{}", clustering_centrality_result);
 
-    println!("\n------------- K representatives -------------");
-
-    let k_representatives_result: String = graph_info.clone().find_k_representatives(15);
+    let k: usize = 15;
+    println!("\n------------- k representatives (k = {}) -------------", k);
+    let k_representatives_result: String = graph_info.clone().find_k_representatives(k);
     println!("{}", k_representatives_result);
 }
 
