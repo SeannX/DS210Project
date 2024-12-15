@@ -48,7 +48,7 @@ fn main() {
     println!("{}", clustering_centrality_result);
 
     let k: usize = 15;
-    println!("\n------------- k representatives (k = {}) -------------", k);
+    println!("\n------------- K representatives -------------");
     let k_representatives_result: String = graph_info.clone().find_k_representatives(k);
     println!("{}", k_representatives_result);
 }
